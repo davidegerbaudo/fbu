@@ -4,6 +4,7 @@ import os
 
 import pymc as mc
 from numpy import array,mean,std, empty
+from math import fabs
 
 
 import matplotlib.pyplot as plt
@@ -77,7 +78,15 @@ class pyFBU(object):
         migrations = array(json.load(open(self.jsonMig)))
 
         #define uniformely distributed variable truth, range betweem lower and upper, for nreco variables
-        truth = mc.DiscreteUniform('truth', lower=self.lower, upper=self.upper, doc='truth', size=nreco)
+#        truth = mc.DiscreteUniform('truth', lower=self.lower, upper=self.upper, doc='truth', size=nreco)
+
+        @mc.stochastic
+        def truth(value=[0. for xx in xrange(nreco)],refcurv=6.1e05,alpha=1e-8):
+            tikonov = 0.
+            for ii in xrange(1,nreco-1):
+                tikonov += (value[ii+1]-2*value[ii]+value[ii-1])**2
+            deltaCurv = fabs(tikonov-refcurv)
+            return -deltaCurv*alpha
 
         #This is where the FBU method is actually implemented
         #__________________________________________________________
