@@ -1,5 +1,8 @@
-.. image:: https://travis-ci.org/gerbaudo/fbu.png
-   :target: https://travis-ci.org/gerbaudo/fbu
+.. image:: https://travis-ci.com/pyFBU/fbu.png
+   :target: https://travis-ci.com/pyFBU/fbu
+
+.. image:: https://img.shields.io/pypi/v/fbu.svg
+   :target: https://pypi.python.org/pypi/fbu
 
 =====
 PyFBU
@@ -31,6 +34,20 @@ PyMC 3 can be installed using conda
 
    conda install -c conda-forge pymc3
 
+The following packages also need to be installed
+
+::
+
+    conda install mkl
+    conda install numpy
+    conda install mkl-service
+
+And this export needs to be added to your bashrc or similar to avoid warings
+
+::
+
+    export MKL_THREADING_LAYER=GNU
+
 or pip
 
 ::
@@ -45,15 +62,17 @@ The latest stable version of PyFBU can be installed using pip.
     pip install fbu
 
 Alternatively one can check out the development version of the code from the 
-`GitHub <https://github.com/gerbaudo/fbu>`_ repository:
+`GitHub <https://github.com/pyFBU/fbu>`_ repository:
 
 ::
 
-	git clone https://github.com/gerbaudo/fbu.git
+	git clone https://github.com/pyFBU/fbu.git
 
 
 Usage
 -----
 
-A `simple tutorial <https://github.com/gerbaudo/fbu/blob/master/tutorial.ipynb>`_ to help you get started.
+A `simple tutorial <tutorial.ipynb>`_ to help you get started.
+
+
 

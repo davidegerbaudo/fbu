@@ -1,6 +1,7 @@
 import pymc3 as mc
 from numpy import random, dot, array, inf
 import theano
+import copy
 
 class PyFBU(object):
     """A class to perform a MCMC sampling.
@@ -14,7 +15,7 @@ class PyFBU(object):
     def __init__(self,data=[],response=[],background={},
                  backgroundsyst={},objsyst={'signal':{},'background':{}},
                  lower=[],upper=[],regularization=None,
-                 rndseed=-1,verbose=False,name='',monitoring=False):
+                 rndseed=-1,verbose=False,name='',monitoring=False, mode=False):
         #                                     [MCMC parameters]
         self.nTune = 1000
         self.nMCMC = 10000 # N of sampling points
@@ -25,7 +26,7 @@ class PyFBU(object):
         self.lower = lower  # lower sampling bounds
         self.upper = upper  # upper sampling bounds
         #                                     [unfolding model parameters]
-        self.prior = 'DiscreteUniform'
+        self.prior = 'Uniform'
         self.priorparams = {}
         self.regularization = regularization
         #                                     [input]
@@ -41,6 +42,9 @@ class PyFBU(object):
         self.name      = name
         self.monitoring = monitoring
         self.sampling_progressbar = True
+        #                                     [mode]
+        self.mode = mode
+        self.MAP_method = 'L-BFGS-B'
 
     #__________________________________________________________
     def validateinput(self):
@@ -67,6 +71,7 @@ class PyFBU(object):
         nbckg = len(backgroundkeys)
 
         backgrounds = []
+        backgroundnormsysts = array([])
         if nbckg>0:
             backgrounds = array([self.background[key] for key in backgroundkeys])
             backgroundnormsysts = array([self.backgroundsyst[key] for key in backgroundkeys])
@@ -83,7 +88,7 @@ class PyFBU(object):
                                             for bckg in backgroundkeys])
 
         recodim  = len(data)
-        resmat = self.response
+        resmat   = self.response
         truthdim = len(resmat)
 
         model = mc.Model()
@@ -150,6 +155,18 @@ class PyFBU(object):
             import time
             from datetime import timedelta
             init_time = time.time()
+
+            print(self.nuts_kwargs)
+
+            
+            if self.mode:
+                map_estimate = mc.find_MAP(model=model, method=self.MAP_method)
+                print (map_estimate)
+                self.MAP = map_estimate
+                self.trace = []
+                self.nuisancestrace = []
+                return
+
             trace = mc.sample(self.nMCMC,tune=self.nTune,cores=self.nCores,
                               chains=self.nChains, nuts_kwargs=self.nuts_kwargs,
                               discard_tuned_samples=self.discard_tuned_samples,
@@ -161,16 +178,20 @@ class PyFBU(object):
             ))
 
             self.trace = [trace['truth%d'%bin][:] for bin in range(truthdim)]
+            #self.trace = [copy.deepcopy(trace['truth%d'%bin][:]) for bin in range(truthdim)]
             self.nuisancestrace = {}
             if nbckg>0:
                 for name,err in zip(backgroundkeys,backgroundnormsysts):
                     if err<0.:
                         self.nuisancestrace[name] = trace['norm_%s'%name][:]
+                        #self.nuisancestrace[name] = copy.deepcopy(trace['norm_%s'%name][:])
                     if err>0.:
                         self.nuisancestrace[name] = trace['gaus_%s'%name][:]
+                        #self.nuisancestrace[name] = copy.deepcopy(trace['gaus_%s'%name][:])
             for name in objsystkeys:
                 if self.systfixsigma==0.:
                     self.nuisancestrace[name] = trace['gaus_%s'%name][:]
+                    #self.nuisancestrace[name] = copy.deepcopy(trace['gaus_%s'%name][:])
 
         if self.monitoring:
             from fbu import monitoring
